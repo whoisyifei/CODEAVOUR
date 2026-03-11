@@ -1,0 +1,37 @@
+import os
+import time
+from pictoblox import Sprite
+
+# Initialize Sprite for visual confirmation
+tobi = Sprite('Tobi')
+
+def trigger_sequence():
+    """Key 1: Triggers 4 specific Command Prompt actions"""
+    tobi.say("Running 4 Commands...")
+    
+    # Layer 2: Sending the literal strings to the prompt
+    os.system("cd /home/imed/IMEDV4/2025")
+    time.sleep(0.2)
+    os.system("command_2_here") # Replace with your 2nd actual command
+    time.sleep(0.2)
+    os.system("command_3_here") # Replace with your 3rd actual command
+    time.sleep(0.2)
+    os.system("command_4_here") # Replace with your 4th actual command
+    
+    tobi.say("Sequence Complete")
+
+def trigger_start():
+    """Key 2: Triggers the main Start command"""
+    tobi.say("Starting System...")
+    # Layer 2: Sending the start command to the prompt
+    os.system("start_command_here") # Replace with your actual start command
+
+# Main Loop
+while True:
+    # Use 'A' for the 4-command sequence
+    if tobi.is_key_pressed('a'):
+        trigger_sequence()
+        
+    # Use 'S' for the Start command
+    if tobi.is_key_pressed('s'):
+        trigger_start()
