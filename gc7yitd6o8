@@ -1,33 +1,36 @@
 import os
 import time
-from pictoblox import Sprite
 
-# Layer 1: Sprite Setup
-tobi = Sprite('Tobi')
+# We use the 'print' function to act like Tobi's speech bubbles
+# since the 'pictoblox' module is currently missing from your library path.
 
-def run_sequence():
-    """Layer 1 detects 'A' -> Commands Layer 2"""
-    tobi.say("Executing Sequence...")
+def trigger_sequence():
+    print("Layer 1: Input Received - Starting Sequence...")
     
-    # Layer 2: The Command Prompt strings
-    # We use '&&' to keep the 'cd' active for the next command
-    cmd_path = "cd /home/imed/IMEDV4/2025 && "
+    # Layer 2: Sending the navigation command to the terminal
+    # We use '&&' to keep the terminal inside your folder for the next commands
+    cmd_base = "cd /home/imed/IMEDV4/2025 && "
     
-    # Layer 3: Running your specific files
-    os.system(cmd_path + "python3 command1.py")
+    # Layer 3: Executing your specific actions
+    os.system(cmd_base + "python3 command1.py")
     time.sleep(0.5)
-    os.system(cmd_path + "python3 command2.py")
-    tobi.say("Done!")
+    os.system(cmd_base + "python3 command2.py")
+    time.sleep(0.5)
+    os.system(cmd_base + "python3 command3.py")
+    time.sleep(0.5)
+    os.system(cmd_base + "python3 command4.py")
+    print("Sequence Complete!")
 
-def run_start():
-    """Layer 1 detects 'S' -> Commands Layer 2"""
-    tobi.say("Robot Starting!")
+def trigger_start():
+    print("Layer 1: Input Received - Starting Program...")
     os.system("cd /home/imed/IMEDV4/2025 && python3 start_program.py")
 
+# Since pictoblox.is_key_pressed won't work without the module, 
+# use the input() method for your competition testing.
 while True:
-    # Checking for Key Triggers
-    if tobi.is_key_pressed('a'):
-        run_sequence()
-        
-    if tobi.is_key_pressed('s'):
-        run_start()
+    choice = input("Enter 'a' for 4-commands or 's' for start: ").lower()
+    
+    if choice == 'a':
+        trigger_sequence()
+    elif choice == 's':
+        trigger_start()
