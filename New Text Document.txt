@@ -1,35 +1,38 @@
 import os
 import time
-from pictoblox import Sprite
 
-# Layer 1: Setup the Interface
-tobi = Sprite('Tobi')
+# LAYER 1: The Decision Layer (Your PictoBlox code)
+# Since the 'Sprite' module is missing, we use a simple loop logic
+print("System Ready. Waiting for commands...")
 
-def trigger_commands():
-    """Key 'A': Triggers 4 commands in sequence"""
-    # Layer 2: Sending the commands to the prompt
-    os.system("cd /home/imed/IMEDV4/2025") # Command 1
-    time.sleep(0.1)
-    os.system("your_second_command")      # Command 2
-    time.sleep(0.1)
-    os.system("your_third_command")       # Command 3
-    time.sleep(0.1)
-    os.system("your_fourth_command")      # Command 4
+def run_sequence():
+    print("Layer 1 triggered Layer 2: Starting 4-command sequence.")
     
-def trigger_start():
-    """Key 'S': Triggers the Start command"""
-    # Layer 2: Sending the start command
-    os.system("your_start_command_here")
+    # LAYER 2: The Command Prompt (The Bridge)
+    # We combine the 'cd' with your commands using '&&'
+    # This keeps the terminal in your /2025 folder
+    cmd_path = "cd /home/imed/IMEDV4/2025 && "
+    
+    # Triggering the 4 Layer 3 actions
+    os.system(cmd_path + "./command1") 
+    time.sleep(0.5)
+    os.system(cmd_path + "./command2")
+    time.sleep(0.5)
+    os.system(cmd_path + "./command3")
+    time.sleep(0.5)
+    os.system(cmd_path + "./command4")
+    print("Sequence Complete.")
 
-# Main Loop
+def run_start():
+    print("Layer 1 triggered Layer 2: Starting main program.")
+    os.system("cd /home/imed/IMEDV4/2025 && ./start_program")
+
+# In PictoBlox, use the 'Stage' to detect keys
 while True:
-    if tobi.is_key_pressed('a'):
-        trigger_commands()
-        # Wait until key is released so it doesn't loop 100 times
-        while tobi.is_key_pressed('a'):
-            pass 
-            
-    if tobi.is_key_pressed('s'):
-        trigger_start()
-        while tobi.is_key_pressed('s'):
-            pass
+    # This is the Layer 1 'Input'
+    command = input("Press 'a' for sequence, 's' for start: ")
+    
+    if command == 'a':
+        run_sequence()
+    elif command == 's':
+        run_start()
