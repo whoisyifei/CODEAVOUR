@@ -1,3 +1,35 @@
-Traceback (most recent call last):
-  File "<exec>", line 3, in <module>
-ModuleNotFoundError: No module named 'pictoblox'
+import os
+import time
+from pictoblox import Sprite
+
+# Layer 1: Setup the Interface
+tobi = Sprite('Tobi')
+
+def trigger_commands():
+    """Key 'A': Triggers 4 commands in sequence"""
+    # Layer 2: Sending the commands to the prompt
+    os.system("cd /home/imed/IMEDV4/2025") # Command 1
+    time.sleep(0.1)
+    os.system("your_second_command")      # Command 2
+    time.sleep(0.1)
+    os.system("your_third_command")       # Command 3
+    time.sleep(0.1)
+    os.system("your_fourth_command")      # Command 4
+    
+def trigger_start():
+    """Key 'S': Triggers the Start command"""
+    # Layer 2: Sending the start command
+    os.system("your_start_command_here")
+
+# Main Loop
+while True:
+    if tobi.is_key_pressed('a'):
+        trigger_commands()
+        # Wait until key is released so it doesn't loop 100 times
+        while tobi.is_key_pressed('a'):
+            pass 
+            
+    if tobi.is_key_pressed('s'):
+        trigger_start()
+        while tobi.is_key_pressed('s'):
+            pass
