@@ -1,0 +1,33 @@
+import os
+import time
+from pictoblox import Sprite
+
+# Layer 1: Sprite Setup
+tobi = Sprite('Tobi')
+
+def run_sequence():
+    """Layer 1 detects 'A' -> Commands Layer 2"""
+    tobi.say("Executing Sequence...")
+    
+    # Layer 2: The Command Prompt strings
+    # We use '&&' to keep the 'cd' active for the next command
+    cmd_path = "cd /home/imed/IMEDV4/2025 && "
+    
+    # Layer 3: Running your specific files
+    os.system(cmd_path + "python3 command1.py")
+    time.sleep(0.5)
+    os.system(cmd_path + "python3 command2.py")
+    tobi.say("Done!")
+
+def run_start():
+    """Layer 1 detects 'S' -> Commands Layer 2"""
+    tobi.say("Robot Starting!")
+    os.system("cd /home/imed/IMEDV4/2025 && python3 start_program.py")
+
+while True:
+    # Checking for Key Triggers
+    if tobi.is_key_pressed('a'):
+        run_sequence()
+        
+    if tobi.is_key_pressed('s'):
+        run_start()
