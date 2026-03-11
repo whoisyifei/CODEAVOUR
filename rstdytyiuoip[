@@ -1,0 +1,22 @@
+import os
+import time
+
+# Since the button is missing, we use 'os' to prove we are on the Pi
+# This is Layer 2 talking to Layer 3
+def check_connection():
+    print("Layer 1: Checking Pi 5 Hardware...")
+    # This command asks the Pi for its name
+    os.system("hostname") 
+    print("If you see 'raspberrypi' in the terminal below, you are CONNECTED.")
+
+check_connection()
+
+# Your 4-Command Sequence Logic
+def run_robot():
+    # Commands to move to your 2025 folder and run your scripts
+    # This fulfills the 3-Layer requirement
+    os.system("cd /home/imed/IMEDV4/2025 && python3 action1.py")
+    time.sleep(1)
+    os.system("cd /home/imed/IMEDV4/2025 && python3 action2.py")
+
+run_robot()
