@@ -1,0 +1,35 @@
+import os
+import time
+
+# Since the 'Sprite' module is causing an error, we use this 
+# standard method which is much more stable on the Raspberry Pi 5.
+
+def run_sequence():
+    print("Action: Running 4-Command Sequence...")
+    # Layer 2: The Command Prompt
+    cmd_base = "cd /home/imed/IMEDV4/2025 && "
+    
+    # Layer 3: Your Files
+    os.system(cmd_base + "python3 command1.py")
+    time.sleep(0.5)
+    os.system(cmd_base + "python3 command2.py")
+    time.sleep(0.5)
+    os.system(cmd_base + "python3 command3.py")
+    time.sleep(0.5)
+    os.system(cmd_base + "python3 command4.py")
+    print("Sequence Complete!")
+
+def run_start():
+    print("Action: Starting Main Program...")
+    os.system("cd /home/imed/IMEDV4/2025 && python3 start_program.py")
+
+# The Main Loop
+print("--- ROBOT CONTROL READY ---")
+while True:
+    # This works in the PictoBlox terminal at the bottom
+    user_key = input("Type 'a' and Enter for sequence, 's' for start: ").lower()
+    
+    if user_key == 'a':
+        run_sequence()
+    elif user_key == 's':
+        run_start()
