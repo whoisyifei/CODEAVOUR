@@ -1,0 +1,28 @@
+import serial
+import subprocess
+import os
+
+# Port is usually /dev/ttyACM0 for Uno on Pi 5
+ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+path = "/home/imed/IMEDV4/2025"
+
+print("--- IMEDV4 SYSTEM ONLINE: AWAITING COMMANDS ---")
+
+while True:
+    if ser.in_waiting > 0:
+        cmd = ser.read().decode('utf-8').strip()
+        
+        if cmd == '1':
+            print("STEP 1 & 2: Cleaning old files...")
+            subprocess.run(f"cd {path} && rm -rf static-web", shell=True)
+            
+        elif cmd == '2':
+            print("STEP 3 & 4: Building Frontend (NPM)...")
+            subprocess.run(f"cd {path}/frontend && npm run build", shell=True)
+            
+        elif cmd == '3':
+            print("STEP 5: Launching All Systems...")
+            subprocess.run(f"cd {path} && npm run start-all", shell=True)
+            
+        elif cmd == '4':
+            print("System Status: Operational")
