@@ -1,23 +1,38 @@
 import serial
 import subprocess
+import time
 
-# Set the port (Usually /dev/ttyACM0 for Arduino Uno on Pi)
-ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+# List of possible ports for Arduino on Pi
+ports = ['/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyUSB0']
+ser = None
 
-print("Waiting for PictoBlox command via Arduino...")
+for p in ports:
+    try:
+        ser = serial.Serial(p, 9600, timeout=1)
+        print(f"Connected to Arduino on {p}!")
+        break
+    except:
+        continue
+
+if not ser:
+    print("CRITICAL ERROR: Arduino not found! Check USB cable.")
+    exit()
+
+path = "/home/imed/IMEDV4/2025"
+
+print("--- SYSTEM ONLINE: LISTENING FOR COMMANDS ---")
 
 while True:
     if ser.in_waiting > 0:
-        line = ser.readline().decode('utf-8').strip()
+        # Read the trigger from Arduino
+        cmd = ser.read().decode('utf-8').strip()
         
-        if line == "1":
-            print("Action 1: Cleaning Folder...")
-            subprocess.run("rm -rf /home/imed/IMEDV4/2025/static-web", shell=True)
-            
-        elif line == "2":
-            print("Action 2: Building Frontend...")
-            subprocess.run("cd /home/imed/IMEDV4/2025/frontend && npm run build", shell=True)
-
-        elif line == "3":
-            print("Action 3: Starting All Systems...")
-            subprocess.run("cd /home/imed/IMEDV4/2025 && npm run start-all", shell=True)
+        if cmd == "1":
+            print(">>> Step 1: Cleaning...")
+            subprocess.run("rm -rf static-web", shell=True, cwd=path)
+        elif cmd == "2":
+            print(">>> Step 2: Building Frontend...")
+            subprocess.run("cd frontend && npm run build", shell=True, cwd=path)
+        elif cmd == "3":
+            print(">>> Step 3: Starting System...")
+            subprocess.run("npm run start-all", shell=True, cwd=path)
