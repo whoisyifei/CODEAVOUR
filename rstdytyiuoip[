@@ -1,18 +1,23 @@
+import serial
 import subprocess
-import time
 
-# Your project folder
-path = "/home/imed/IMEDV4/2025"
+# Set the port (Usually /dev/ttyACM0 for Arduino Uno on Pi)
+ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
 
-def run_cmd(command):
-    try:
-        print(f"Executing: {command}")
-        # 'shell=True' helps bypass the "Function not implemented" error
-        subprocess.run(f"cd {path} && {command}", shell=True, check=True)
-        print("Success!")
-    except Exception as e:
-        print(f"Error: {e}")
+print("Waiting for PictoBlox command via Arduino...")
 
-# TRIGGER THE COMMANDS
-# Try running just one to see if it works:
-run_cmd("sudo python3 command1.py")
+while True:
+    if ser.in_waiting > 0:
+        line = ser.readline().decode('utf-8').strip()
+        
+        if line == "1":
+            print("Action 1: Cleaning Folder...")
+            subprocess.run("rm -rf /home/imed/IMEDV4/2025/static-web", shell=True)
+            
+        elif line == "2":
+            print("Action 2: Building Frontend...")
+            subprocess.run("cd /home/imed/IMEDV4/2025/frontend && npm run build", shell=True)
+
+        elif line == "3":
+            print("Action 3: Starting All Systems...")
+            subprocess.run("cd /home/imed/IMEDV4/2025 && npm run start-all", shell=True)
