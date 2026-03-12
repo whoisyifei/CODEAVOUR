@@ -2,37 +2,30 @@ import serial
 import subprocess
 import time
 
-# List of possible ports for Arduino on Pi
-ports = ['/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyUSB0']
-ser = None
-
-for p in ports:
-    try:
-        ser = serial.Serial(p, 9600, timeout=1)
-        print(f"Connected to Arduino on {p}!")
-        break
-    except:
-        continue
-
-if not ser:
-    print("CRITICAL ERROR: Arduino not found! Check USB cable.")
+# Use the port you found earlier
+try:
+    ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=0.1)
+    # Clear the buffer to start fresh
+    ser.reset_input_buffer() 
+    print("--- CONNECTED TO /dev/ttyUSB0 ---")
+except Exception as e:
+    print(f"Error: {e}")
     exit()
-
-path = "/home/imed/IMEDV4/2025"
-
-print("--- SYSTEM ONLINE: LISTENING FOR COMMANDS ---")
 
 while True:
     if ser.in_waiting > 0:
-        # Read the trigger from Arduino
-        cmd = ser.read().decode('utf-8').strip()
+        # Read the raw data to see if anything is coming through
+        line = ser.readline().decode('utf-8', errors='replace').strip()
         
-        if cmd == "1":
-            print(">>> Step 1: Cleaning...")
-            subprocess.run("rm -rf static-web", shell=True, cwd=path)
-        elif cmd == "2":
-            print(">>> Step 2: Building Frontend...")
-            subprocess.run("cd frontend && npm run build", shell=True, cwd=path)
-        elif cmd == "3":
-            print(">>> Step 3: Starting System...")
-            subprocess.run("npm run start-all", shell=True, cwd=path)
+        if line:
+            print(f"Arduino says: '{line}'") # DEBUG LINE
+            
+            if "1" in line:
+                print(">>> SUCCESS: Starting Clean...")
+                subprocess.run("rm -rf static-web", shell=True, cwd="/home/imed/IMEDV4/2025")
+            elif "2" in line:
+                print(">>> SUCCESS: Starting Build...")
+                subprocess.run("cd frontend && npm run build", shell=True, cwd="/home/imed/IMEDV4/2025")
+            elif "3" in line:
+                print(">>> SUCCESS: Starting All...")
+                subprocess.run("npm run start-all", shell=True, cwd="/home/imed/IMEDV4/2025")
