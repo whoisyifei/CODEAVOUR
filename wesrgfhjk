@@ -1,9 +1,18 @@
-import requests
+import js
 
-# When you want to trigger the Build
-def on_button_click():
+def run_pi(cmd_number):
+    # We create a small string of JavaScript code
+    # This is the most direct way to bypass PictoBlox's restrictions
+    url = "http://127.0.0.1:5000/run/" + str(cmd_number)
+    
+    js_code = f"fetch('{url}', {{mode: 'no-cors'}})"
+    
     try:
-        # This tells the Pi to run Step 2 (NPM Build)
-        requests.get("http://127.0.0.1:5000/run/2")
-    except:
-        print("Bridge not running!")
+        # This tells the browser to execute the fetch command
+        js.eval(js_code)
+        print("Success: Signal sent to Terminal for command " + str(cmd_number))
+    except Exception as e:
+        print("Error: Could not execute fetch. " + str(e))
+
+# Test it by running command 1
+run_pi(1)
