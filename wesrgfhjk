@@ -1,14 +1,9 @@
-import serial
+import requests
 
-# In PictoBlox Web, 'sprite' or 'communication' is used 
-# but for Arduino Upload mode, we use the serial library
-uno = arduino.Uno()
-
-# Function to send trigger to Pi
-def trigger_pi(command_id):
-    # Sends '1', '2', etc. to the USB port
-    uno.serial_print(command_id)
-
-# Example: Triggering your 5 steps
-trigger_pi("1") # Clean
-trigger_pi("2") # Build
+# When you want to trigger the Build
+def on_button_click():
+    try:
+        # This tells the Pi to run Step 2 (NPM Build)
+        requests.get("http://127.0.0.1:5000/run/2")
+    except:
+        print("Bridge not running!")
