@@ -1,0 +1,34 @@
+import os
+import time
+
+# Define the main folder
+base_path = "/home/imed/IMEDV4/2025"
+
+print("--- IMEDV4 SYSTEM CONTROL ---")
+print("1: Go to Folder | 2: Clean Files | 3: Build Frontend | 4: Start All")
+
+while True:
+    choice = input("Select Action (1-4 or 5 to Start): ")
+
+    if choice == '1':
+        print("Moving to Project Folder...")
+        os.system(f"cd {base_path} && ls")
+        
+    elif choice == '2':
+        print("Removing old static web files...")
+        # Be careful with rm -rf! 
+        os.system(f"cd {base_path} && rm -rf static-web")
+        print("Cleanup complete.")
+
+    elif choice == '3':
+        print("Building Frontend (This may take a minute)...")
+        # Combining Step 3 and 4 from your list
+        os.system(f"cd {base_path}/frontend && npm run build")
+        print("Build finished.")
+
+    elif choice == '4' or choice == '5':
+        print("LAUNCHING SYSTEM (npm run start-all)...")
+        # This will stay running, so the terminal might look 'busy'
+        os.system(f"cd {base_path} && npm run start-all")
+
+    time.sleep(0.2)
