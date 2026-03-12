@@ -1,31 +1,31 @@
-import serial
+from flask import Flask
+from flask_cors import CORS
 import subprocess
-import time
 
-# Use the port you found earlier
-try:
-    ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=0.1)
-    # Clear the buffer to start fresh
-    ser.reset_input_buffer() 
-    print("--- CONNECTED TO /dev/ttyUSB0 ---")
-except Exception as e:
-    print(f"Error: {e}")
-    exit()
+app = Flask(__name__)
+CORS(app) # Allows the browser to talk to this script
 
-while True:
-    if ser.in_waiting > 0:
-        # Read the raw data to see if anything is coming through
-        line = ser.readline().decode('utf-8', errors='replace').strip()
-        
-        if line:
-            print(f"Arduino says: '{line}'") # DEBUG LINE
-            
-            if "1" in line:
-                print(">>> SUCCESS: Starting Clean...")
-                subprocess.run("rm -rf static-web", shell=True, cwd="/home/imed/IMEDV4/2025")
-            elif "2" in line:
-                print(">>> SUCCESS: Starting Build...")
-                subprocess.run("cd frontend && npm run build", shell=True, cwd="/home/imed/IMEDV4/2025")
-            elif "3" in line:
-                print(">>> SUCCESS: Starting All...")
-                subprocess.run("npm run start-all", shell=True, cwd="/home/imed/IMEDV4/2025")
+PATH = "/home/imed/IMEDV4/2025"
+
+@app.route('/run/<command_id>')
+def execute_command(command_id):
+    if command_id == "1":
+        print(">>> Command Received: CLEAN")
+        subprocess.run("rm -rf static-web", shell=True, cwd=PATH)
+        return "Cleaned!", 200
+    
+    elif command_id == "2":
+        print(">>> Command Received: BUILD")
+        subprocess.run("cd frontend && npm run build", shell=True, cwd=PATH)
+        return "Built!", 200
+
+    elif command_id == "3":
+        print(">>> Command Received: START")
+        subprocess.run("npm run start-all", shell=True, cwd=PATH)
+        return "Started!", 200
+
+    return "Unknown Command", 400
+
+if __name__ == '__main__':
+    # Runs the bridge on Port 5000
+    app.run(host='0.0.0.0', port=5000)
