@@ -1,17 +1,31 @@
-Traceback (most recent call last):
-  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 322, in open
-    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-OSError: [Errno 16] Device or resource busy: '/dev/ttyUSB0'
+Arduino: 1.8.19 (Linux), Board: "Arduino Uno"
 
-During handling of the above exception, another exception occurred:
+Sketch uses 1624 bytes (5%) of program storage space. Maximum is 32256 bytes.
+Global variables use 190 bytes (9%) of dynamic memory, leaving 1858 bytes for local variables. Maximum is 2048 bytes.
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 1 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 2 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 3 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 4 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 5 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 6 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 7 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 8 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 9 of 10: not in sync: resp=0x00
+avrdude: stk500_recv(): programmer is not responding
+avrdude: stk500_getsync() attempt 10 of 10: not in sync: resp=0x00
+Problem uploading to board.  See https://support.arduino.cc/hc/en-us/sections/360003198300 for suggestions.
+Invalid library found in /home/imed/Arduino/libraries/Arduino123: no headers files (.h) found in /home/imed/Arduino/libraries/Arduino123
 
-Traceback (most recent call last):
-  File "/home/imed/IMEDV4/2025/bridge.py", line 6, in <module>
-    ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/serial/serialutil.py", line 244, in __init__
-    self.open()
-  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 325, in open
-    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
-serial.serialutil.SerialException: [Errno 16] could not open port /dev/ttyUSB0: [Errno 16] Device or resource busy: '/dev/ttyUSB0'
+
+This report would have more information with
+"Show verbose output during compilation"
+option enabled in File -> Preferences.
