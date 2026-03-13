@@ -1,17 +1,3 @@
-npm error Missing script: "start-all"
-npm error
-npm error To see a list of scripts, run:
-npm error   npm run
-npm error A complete log of this run can be found in: /home/imed/.npm/_logs/2026-03-12T07_58_46_926Z-debug-0.log
-
-> frontend@0.0.0 build
-> vite build
-
-127.0.0.1 - - [12/Mar/2026 15:58:47] "GET /run/3 HTTP/1.1" 200 -
-vite v5.4.21 building for production...
-✓ 1693 modules transformed.
-dist/index.html                   0.46 kB │ gzip:  0.29 kB
-dist/assets/index-pLEVUjdI.css    5.54 kB │ gzip:  1.67 kB
-dist/assets/index-CkJ_6ebx.js   154.96 kB │ gzip: 49.73 kB
-✓ built in 2.57s
-127.0.0.1 - - [12/Mar/2026 15:58:50] "GET /run/2 HTTP/1.1" 200 -
+Traceback (most recent call last):
+  File "<exec>", line 25, in <module>
+AttributeError: 'FaceDetection' object has no attribute 'analyse'
