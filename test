@@ -7,38 +7,42 @@ def run_pi(cmd_number):
     js_code = f"fetch('{url}', {{mode: 'no-cors'}})"
     try:
         js.eval(js_code)
-        print("AI Triggered Command: " + str(cmd_number))
+        print("Success: Signal sent to Terminal!")
     except:
         pass
 
-# --- AI DETECTION SETUP ---
+# --- AI SETUP ---
 fd = FaceDetection()
 fd.video("on")
 fd.enablebox()
-fd.setthreshold(0.5) # Matches your block settings
-
-print("AI System Active. Step in front of camera to build...")
 
 has_run = False 
 
 while True:
-    # 1. This is the block 'analyse image from camera'
-    fd.analyse_camera() 
-    
-    # 2. This is the block 'get # faces'
-    if fd.count() > 0: 
-        if not has_run:
-            print("HUMAN DETECTED! Initializing Build...")
-            run_pi(1) # Clean
-            time.sleep(2)
-            run_pi(2) # Build
-            
-            has_run = True 
-            print("System running. Step away to reset.")
-    else:
-        # If no faces are seen, reset the trigger
-        if has_run:
-            print("Resetting AI trigger...")
-            has_run = False
-            
-    time.sleep(0.1) # Faster loop for better detection
+    try:
+        # We try the 3 most common names for that 'Analyse' block
+        try:
+            fd.analyse_camera()
+        except:
+            try:
+                fd.analyze_camera()
+            except:
+                fd.analyzeVideo() # Some versions use this
+        
+        # Check if face count is > 0
+        if fd.count() > 0:
+            if not has_run:
+                print("FACE DETECTED!")
+                run_pi(1) # Clean
+                time.sleep(2)
+                run_pi(2) # Build
+                has_run = True
+        else:
+            if has_run:
+                print("Looking for next person...")
+                has_run = False
+                
+    except Exception as e:
+        print("AI Error: " + str(e))
+        
+    time.sleep(0.1)
