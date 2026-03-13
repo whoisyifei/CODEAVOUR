@@ -4,39 +4,41 @@ import time
 # --- THE BRIDGE FUNCTION ---
 def run_pi(cmd_number):
     url = "http://127.0.0.1:5000/run/" + str(cmd_number)
-    # Using no-cors to bypass browser security during the demo
     js_code = f"fetch('{url}', {{mode: 'no-cors'}})"
     try:
         js.eval(js_code)
         print("AI Triggered Command: " + str(cmd_number))
     except:
-        print("Bridge communication failed")
+        pass
 
 # --- AI DETECTION SETUP ---
 fd = FaceDetection()
 fd.video("on")
 fd.enablebox()
+fd.setthreshold(0.5) # Matches your block settings
 
-print("AI System Active. Searching for humans...")
+print("AI System Active. Step in front of camera to build...")
 
 has_run = False 
 
 while True:
-    # Most web versions of PictoBlox automatically update the camera feed,
-    # but we call the detection check here:
-    if fd.is_face_detected(): 
+    # 1. This is the block 'analyse image from camera'
+    fd.analyse_camera() 
+    
+    # 2. This is the block 'get # faces'
+    if fd.count() > 0: 
         if not has_run:
-            print("HUMAN DETECTED! Starting System...")
+            print("HUMAN DETECTED! Initializing Build...")
             run_pi(1) # Clean
-            time.sleep(2) # Give it a moment between commands
+            time.sleep(2)
             run_pi(2) # Build
             
             has_run = True 
-            print("System is now running.")
+            print("System running. Step away to reset.")
     else:
-        # Reset if no face is seen for a bit
+        # If no faces are seen, reset the trigger
         if has_run:
-            print("Area clear. Ready for next detection.")
+            print("Resetting AI trigger...")
             has_run = False
             
-    time.sleep(0.5)
+    time.sleep(0.1) # Faster loop for better detection
