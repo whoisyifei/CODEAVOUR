@@ -4,41 +4,39 @@ import time
 # --- THE BRIDGE FUNCTION ---
 def run_pi(cmd_number):
     url = "http://127.0.0.1:5000/run/" + str(cmd_number)
+    # Using no-cors to bypass browser security during the demo
     js_code = f"fetch('{url}', {{mode: 'no-cors'}})"
     try:
         js.eval(js_code)
         print("AI Triggered Command: " + str(cmd_number))
     except:
-        pass
+        print("Bridge communication failed")
 
 # --- AI DETECTION SETUP ---
-# Initialize the camera and AI
-fd = FaceDetection() # Or ObjectDetection()
+fd = FaceDetection()
 fd.video("on")
 fd.enablebox()
 
 print("AI System Active. Searching for humans...")
 
-has_run = False # To make sure it only triggers ONCE when it sees a person
+has_run = False 
 
 while True:
-    fd.analyse() # AI looks at the current camera frame
-    
-    # Check if a person is detected
-    if fd.count() > 0:
+    # Most web versions of PictoBlox automatically update the camera feed,
+    # but we call the detection check here:
+    if fd.is_face_detected(): 
         if not has_run:
             print("HUMAN DETECTED! Starting System...")
-            run_pi(1) # Run Clean
-            time.sleep(1)
-            run_pi(2) # Run Build
+            run_pi(1) # Clean
+            time.sleep(2) # Give it a moment between commands
+            run_pi(2) # Build
             
-            has_run = True # Prevents it from looping the command forever
+            has_run = True 
             print("System is now running.")
     else:
-        # If the person leaves, reset so it can detect again later
+        # Reset if no face is seen for a bit
         if has_run:
             print("Area clear. Ready for next detection.")
             has_run = False
             
-    time.sleep(0.5) # Tiny delay so the Pi doesn't overheat
-
+    time.sleep(0.5)
