@@ -1,142 +1,175 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import status_state 
-import shared_state 
+import status_state # Shared status and task variables
+import shared_state # Holds LOG_ENTRIES deque
 from datetime import datetime
 import os
 import sys
 import subprocess
-import threading
-import cv2 # For Camera
-import time
 
-# --- CONFIGURATION ---
+# --- Configuration ---
+# PATH must point to the root of your project
+PATH = "/home/imed/IMEDV4/2025"
+# STATIC_FOLDER must match where React builds its files
 STATIC_FOLDER = 'static_web'
-BASE_PATH = "/home/imed/IMEDV4/2025"
 
+# Initialize Flask
 app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='')
-CORS(app)
+CORS(app) # Enable CORS for both API and Bridge requests
 
-# ==========================================================
-# === SYSTEM COMMAND LOGIC ===
-# ==========================================================
-
-def run_system_command(command_id):
-    """Internal function to execute the build/clean/start logic"""
-    try:
-        if command_id == "1":
-            print(f"[{datetime.now().strftime('%H:%M:%S')}][SYSTEM] Action: CLEAN")
-            subprocess.run("rm -rf static_web", shell=True, cwd=BASE_PATH)
-        elif command_id == "2":
-            print(f"[{datetime.now().strftime('%H:%M:%S')}][SYSTEM] Action: BUILD")
-            build_chain = "cd frontend && npm run build && rm -rf ../static_web && mv dist ../static_web"
-            subprocess.run(build_chain, shell=True, cwd=BASE_PATH)
-        elif command_id == "3":
-            print(f"[{datetime.now().strftime('%H:%M:%S')}][SYSTEM] Action: START")
-            subprocess.run("npm run start-all", shell=True, cwd=BASE_PATH)
-    except Exception as e:
-        print(f"[ERROR][SUBPROCESS] {e}")
-
-# ==========================================================
-# === AI CAMERA DETECTION THREAD ===
-# ==========================================================
-
-def ai_camera_loop():
-    """Runs in the background to detect humans and trigger the build"""
-    print("[AI] Initializing Camera Module...")
-    cap = cv2.VideoCapture(1) # Open the Pi Camera
-    # Load a simple pre-trained face detector that comes with OpenCV
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    has_triggered = False
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            continue
-
-        # Convert to grayscale for faster AI processing
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
-        if len(faces) > 0:
-            if not has_triggered:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}][AI] HUMAN DETECTED! Starting Automations...")
-                # Run Clean (1) and Build (2)
-                run_system_command("1")
-                run_system_command("2")
-                has_triggered = True
-        else:
-            if has_triggered:
-                print("[AI] Area clear. Resetting...")
-                has_triggered = False
-
-        time.sleep(0.5) # Don't overwhelm the Pi CPU
-
-# ==========================================================
-# === API ROUTES (Preserving all 179 lines of logic) ===
-# ==========================================================
+# ==========================================
+# === INTEGRATED BRIDGE ROUTES (for PictoBlox) ===
+# ==========================================
 
 @app.route('/run/<command_id>')
 def execute_command(command_id):
-    """Manual trigger route (can still be called by PictoBlox)"""
-    run_system_command(command_id)
-    return jsonify({"status": "Command processed"}), 200
+    """
+    Bridge logic to trigger system-level commands from the web/AI.
+    """
+    try:
+        if command_id == "1":
+            print(f"[{datetime.now().strftime('%H:%M:%S')}][BRIDGE] Command: CLEAN")
+            # Deletes the folder to ensure a fresh deployment
+            subprocess.run("rm -rf static_web", shell=True, cwd=PATH)
+            return "Cleaned!", 200
+        
+        elif command_id == "2":
+            print(f"[{datetime.now().strftime('%H:%M:%S')}][BRIDGE] Command: BUILD")
+            # 1. Enter frontend, 2. Build, 3. Clean target, 4. Move dist to static_web
+            build_cmd = "cd frontend && npm run build && rm -rf ../static_web && mv dist ../static_web"
+            subprocess.run(build_cmd, shell=True, cwd=PATH)
+            return "Built and Deployed!", 200
+
+        elif command_id == "3":
+            print(f"[{datetime.now().strftime('%H:%M:%S')}][BRIDGE] Command: START")
+            subprocess.run("npm run start-all", shell=True, cwd=PATH)
+            return "Started!", 200
+
+        return "Unknown Command", 400
+    except Exception as e:
+        print(f"[ERROR][BRIDGE] {e}")
+        return str(e), 500
+
+# ==========================================
+# === LOG API ENDPOINTS (Restored Features) ===
+# ==========================================
 
 @app.route('/api/status', methods=['GET'])
 def get_system_status():
+    """Returns the current startup status of all components."""
     return jsonify(status_state.CURRENT_STATUS)
 
 @app.route('/api/log', methods=['POST'])
 def receive_log():
-    if not request.is_json: return jsonify({"message": "Missing JSON"}), 400
+    """Receives log entries from the Robot Core."""
+    if not request.is_json:
+        return jsonify({"message": "Missing JSON in request"}), 400
+
     log_entry = request.get_json()
+    required_fields = ['timestamp', 'level', 'component', 'message']
+    
+    if not all(field in log_entry for field in required_fields):
+        print(f"[ERROR][API] Received invalid log format: {log_entry}")
+        return jsonify({"message": "Invalid log format"}), 400
+
     try:
         shared_state.LOG_ENTRIES.appendleft(log_entry)
-        print(f"[LOG][{log_entry['component']}] {log_entry['message']}")
-    except NameError: pass
+        try:
+            ts = datetime.fromisoformat(log_entry['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            ts = log_entry['timestamp']
+        print(f"[API_RECEIVE][{ts}][{log_entry['level']}][{log_entry['component']}] {log_entry['message']}")
+    except NameError:
+        print(f"[WARNING] shared_state.LOG_ENTRIES not found.")
+        
     return jsonify({"status": "Log received"}), 200
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
-    try: return jsonify(list(shared_state.LOG_ENTRIES))
-    except NameError: return jsonify([]), 200 
+    """Returns current system log entries to the frontend."""
+    try:
+        return jsonify(list(shared_state.LOG_ENTRIES))
+    except NameError:
+        return jsonify([]), 200
 
 @app.route('/api/task', methods=['GET'])
 def get_current_task_state():
+    """Returns the current state of the robot's active task."""
     return jsonify(status_state.CURRENT_TASK_STATE)
 
 @app.route('/api/system_status_update', methods=['POST'])
 def receive_system_status_update():
     try:
-        data = request.get_json()
-        status_state.update_status_stage(data.get('stage_name'), message_override=data.get('message'), is_complete=data.get('is_complete', False))
-        return jsonify({"status": "Updated"}), 200
-    except Exception as e: return jsonify({"error": str(e)}), 500
+        update_data = request.get_json()
+        stage_name = update_data.get('stage_name')
+        message = update_data.get('message')
+        is_complete = update_data.get('is_complete', False)
+
+        if stage_name:
+            status_state.update_status_stage(stage_name, message_override=message, is_complete=is_complete)
+            return jsonify({"status": "System Status updated successfully"}), 200
+        return jsonify({"error": "Missing stage_name"}), 400
+    except Exception as e:
+        print(f"[ERROR] Status update failed: {e}", file=sys.stderr)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/task_update', methods=['POST'])
+def receive_task_state_update():
+    try:
+        task_state_data = request.get_json()
+        if task_state_data is None or task_state_data == 'null':
+            status_state.reset_task_state()
+            return jsonify({"status": "Task state reset successfully"}), 200
+            
+        action = task_state_data.get('action')
+        if action == 'SET':
+            status_state.set_current_task_state(task_state_data.get('state', {}))
+        elif action == 'UPDATE':
+            stage = task_state_data.get('stage')
+            message = task_state_data.get('message')
+            if status_state.CURRENT_TASK_STATE and stage:
+                status_state.CURRENT_TASK_STATE['current_stage'] = stage
+                if message:
+                     status_state.CURRENT_TASK_STATE['message'] = message
+        return jsonify({"status": "Task state updated successfully"}), 200
+    except Exception as e:
+        print(f"[ERROR] Task update failed: {e}", file=sys.stderr)
+        return jsonify({"error": str(e)}), 500
+
+# ==========================================
+# === FRONTEND SERVING (React Support) ===
+# ==========================================
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):
+    """Serves the built React app and handles routing."""
     full_path = os.path.join(STATIC_FOLDER, path)
     if path != "" and os.path.exists(full_path):
         return send_from_directory(STATIC_FOLDER, path)
+    
     index_path = os.path.join(STATIC_FOLDER, 'index.html')
     if not os.path.exists(index_path):
-        return "Waiting for AI to build the frontend... Stand in front of the camera!", 404
+        return "IMED Frontend not found. Did you trigger 'Build' from PictoBlox?", 404
+        
     return send_from_directory(STATIC_FOLDER, 'index.html')
 
-# ==========================================================
-# === MAIN STARTUP ===
-# ==========================================================
+# ==========================================
+# === SERVER STARTUP ===
+# ==========================================
 
 if __name__ == '__main__':
-    # 1. Start the AI detection in a separate thread so it doesn't block the API
-    camera_thread = threading.Thread(target=ai_camera_loop, daemon=True)
-    camera_thread.start()
-
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}][SERVER] Flask API + AI Camera starting...")
+    # Initial status update
+    try:
+        status_state.update_status_stage("INITIALIZING", message_override="System components loaded.", is_complete=True)
+        status_state.update_status_stage("API_SERVER", message_override="API Server running.", is_complete=True)
+    except NameError:
+         print("[WARNING] status_state.py not found.")
+        
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}][SERVER] Unified IMED API starting on http://0.0.0.0:5000")
     
     try:
+        # debug=False and use_reloader=False are important when using subprocesses
         app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
     except Exception as e:
-        print(f"[CRITICAL] {e}", file=sys.stderr)
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}][CRITICAL ERROR] {e}", file=sys.stderr)
