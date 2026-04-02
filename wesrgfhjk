@@ -1,18 +1,174 @@
-import js
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
+import status_state # Shared status and task variables
+import shared_state # Assuming this holds your LOG_ENTRIES deque
+from datetime import datetime
+import os
+import sys
 
-def run_pi(cmd_number):
-    # We create a small string of JavaScript code
-    # This is the most direct way to bypass PictoBlox's restrictions
-    url = "http://127.0.0.1:5000/run/" + str(cmd_number)
+# Define the directory where the built React files are located
+# This MUST match the folder created by your 'npm run build' script
+STATIC_FOLDER = 'static_web'
+
+# Initialize Flask to use the static folder for serving web content.
+app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='')
+CORS(app) # Enable CORS for API requests
+
+# --- API Endpoints ---
+
+@app.route('/api/status', methods=['GET'])
+def get_system_status():
+    """Returns the current startup status of all components."""
+    return jsonify(status_state.CURRENT_STATUS)
+
+@app.route('/api/log', methods=['POST'])
+def receive_log():
+    """Receives log entries from the Robot Core and stores them in the queue."""
+    if not request.is_json:
+        return jsonify({"message": "Missing JSON in request"}), 400
+
+    log_entry = request.get_json()
     
-    js_code = f"fetch('{url}', {{mode: 'no-cors'}})"
-    
+    # 1. Validate required fields
+    required_fields = ['timestamp', 'level', 'component', 'message']
+    if not all(field in log_entry for field in required_fields):
+        print(f"[ERROR][API] Received invalid log format: {log_entry}")
+        return jsonify({"message": "Invalid log format"}), 400
+
+    # 2. Add log to the shared circular buffer (deque) - Assuming shared_state.LOG_ENTRIES exists
     try:
-        # This tells the browser to execute the fetch command
-        js.eval(js_code)
-        print("Success: Signal sent to Terminal for command " + str(cmd_number))
-    except Exception as e:
-        print("Error: Could not execute fetch. " + str(e))
+        shared_state.LOG_ENTRIES.appendleft(log_entry)
+        
+        # 3. Print locally for console visibility (using the old printing format)
+        try:
+            ts = datetime.fromisoformat(log_entry['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            ts = log_entry['timestamp']
 
-# Test it by running command 1
-run_pi(1)
+        print(f"[API_RECEIVE][{ts}][{log_entry['level']}][{log_entry['component']}] {log_entry['message']}")
+    except NameError:
+        # Fallback if shared_state is missing but we still want to acknowledge the log
+        print(f"[WARNING] shared_state.LOG_ENTRIES not found. Log not stored.")
+        
+    return jsonify({"status": "Log received"}), 200
+
+# === Endpoint for frontend to fetch logs (Restored from old version) ===
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    """API endpoint to return the current system log entries to the frontend."""
+    try:
+        # Convert deque to a list 
+        return jsonify(list(shared_state.LOG_ENTRIES))
+    except NameError:
+        return jsonify([]), 200 # Return empty list if logs are unavailable
+
+
+@app.route('/api/task', methods=['GET'])
+def get_current_task_state():
+    """Returns the current state of the robot's active task."""
+    return jsonify(status_state.CURRENT_TASK_STATE)
+
+@app.route('/api/system_status_update', methods=['POST'])
+def receive_system_status_update():
+    """
+    Receives system status updates (like ROBOT_CORE completion) from 
+    separate processes (like main.py) and updates the shared state.
+    """
+    try:
+        update_data = request.get_json()
+        stage_name = update_data.get('stage_name')
+        message = update_data.get('message')
+        is_complete = update_data.get('is_complete', False)
+
+        if stage_name:
+            status_state.update_status_stage(
+                stage_name, 
+                message_override=message, 
+                is_complete=is_complete
+            )
+            return jsonify({"status": "System Status updated successfully"}), 200
+        return jsonify({"error": "Missing stage_name"}), 400
+    except Exception as e:
+        print(f"[ERROR] Internal error during status update: {e}", file=sys.stderr)
+        return jsonify({"error": f"Internal error during status update: {e}"}), 500
+
+@app.route('/api/task_update', methods=['POST'])
+def receive_task_state_update():
+    """
+    Receives task state updates (like MOVING, DISPENSING) from main.py
+    and updates the shared CURRENT_TASK_STATE variable.
+    """
+    try:
+        task_state_data = request.get_json()
+        
+        # Check if the payload is explicitly 'null' or empty for a reset
+        if task_state_data is None or task_state_data == 'null':
+            status_state.reset_task_state()
+            return jsonify({"status": "Task state reset successfully"}), 200
+            
+        # Handle SET and UPDATE actions
+        action = task_state_data.get('action')
+        
+        if action == 'SET':
+            status_state.set_current_task_state(task_state_data.get('state', {}))
+        elif action == 'UPDATE':
+            stage = task_state_data.get('stage')
+            message = task_state_data.get('message')
+            # Assuming update_task_stage exists in status_state.py (or we can update it directly)
+            # Since update_task_stage was not defined in the snippet, we'll implement the update here:
+            if status_state.CURRENT_TASK_STATE and stage:
+                status_state.CURRENT_TASK_STATE['current_stage'] = stage
+                if message:
+                     status_state.CURRENT_TASK_STATE['message'] = message # Add message field to task state
+            
+        return jsonify({"status": "Task state updated successfully"}), 200
+
+    except Exception as e:
+        print(f"[ERROR] Internal error during task state update: {e}", file=sys.stderr)
+        return jsonify({"error": f"Internal error during task state update: {e}"}), 500
+
+
+# === CRUCIAL ROUTES FOR SERVING THE REACT FRONTEND (Restored) ===
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """
+    Serves the static files (JS, CSS, images) or the main index.html for React routing.
+    """
+    # 1. Check if the requested path is a specific file that exists in static_web
+    full_path = os.path.join(STATIC_FOLDER, path)
+    if path != "" and os.path.exists(full_path):
+        # If it exists (e.g., /assets/index-xyz.js), serve that file directly
+        return send_from_directory(STATIC_FOLDER, path)
+    
+    # 2. For all other routes (including the root '/'), serve the main index.html file.
+    index_path = os.path.join(STATIC_FOLDER, 'index.html')
+    if not os.path.exists(index_path):
+        return "IMED Frontend not found. Did you run 'npm run build' and rename the output folder to 'static_web'?", 404
+        
+    return send_from_directory(STATIC_FOLDER, 'index.html')
+
+
+# --- Server Startup ---
+
+if __name__ == '__main__':
+    # 1. Update the shared state to mark API_SERVER as running *before* running Flask
+    try:
+        # Mark INITIALIZING as complete first, as Flask is about to start
+        status_state.update_status_stage("INITIALIZING", message_override="System components loaded.", is_complete=True)
+        # Mark API_SERVER as running second
+        status_state.update_status_stage("API_SERVER", message_override="API Server running.", is_complete=True)
+    except NameError:
+         print("[WARNING] Could not set status_state, ensure status_state.py is present.")
+        
+    # 2. Log confirmation to the console
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}][SERVER] Flask API server starting on http://0.0.0.0:5000")
+    
+    # 3. Run the Flask app
+    try:
+        # Using host='0.0.0.0' is crucial for concurrent processes to communicate reliably.
+        # Setting use_reloader=False prevents the server from restarting itself unnecessarily.
+        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    except Exception as e:
+        # If the server fails to bind or crashes during startup, log it.
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}][CRITICAL ERROR] Failed to run Flask app: {e}", file=sys.stderr)
