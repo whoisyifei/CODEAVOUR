@@ -1,3 +1,15 @@
-Traceback (most recent call last):
-  File "<exec>", line 25, in <module>
-AttributeError: 'FaceDetection' object has no attribute 'analyse'
+transforming (11) node_modules/lucide-react/dist/esm/icons/fingerprint-pattern.js[11:00:46][BRIDGE] Command: START
+npm error Missing script: "start-all"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/imed/.npm/_logs/2026-04-02T03_00_46_684Z-debug-0.log
+127.0.0.1 - - [02/Apr/2026 11:00:46] "GET /run/3 HTTP/1.1" 200 -
+✓ 1693 modules transformed.
+dist/index.html                   0.46 kB │ gzip:  0.29 kB
+dist/assets/index-pLEVUjdI.css    5.54 kB │ gzip:  1.67 kB
+dist/assets/index-CkJ_6ebx.js   154.96 kB │ gzip: 49.73 kB
+✓ built in 4.56s
+127.0.0.1 - - [02/Apr/2026 11:00:49] "GET /run/2 HTTP/1.1" 200 -
+
+
